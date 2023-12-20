@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import messagebox
 import random
 import pyperclip
+import json
 
 letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
 numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
@@ -34,23 +35,70 @@ def random_password():
 
 def save_password():
   #get the value of all entry
-  website_save = website_entry.get()
+  website_save = website_entry.get().lower()
   mail_save = mail_entry.get()
   password_save = password_entry.get()
+
+  new_data = {website_save: { 
+              "email": mail_save, 
+               "password": password_save
+            }
+  }
 
   if len(website_save) == 0 or len(password_save) == 0:
       messagebox.showinfo(title="Empty entry", message="Please don't leave fields empty")
   else:
-    is_ok = messagebox.askokcancel(title=website_save, message=f"This are the details entered: \nEmail: {mail_save} \n Password: {password_save}\n Is it ok to save ?")
-
-
-    if is_ok:
-        #save the value into a file 
-        with open("./password-manager-start/save_password.txt", mode= "a") as file:
-          file.write(f"{website_save} | {mail_save} | {password_save} \n")
+     #save the value into a file 
+      try:
+        with open("./password-manager-start/save_password.json", mode= "r") as data_file:
+          #read old data from json file
+          data = json.load(data_file) 
+      except FileNotFoundError:
+        with open("./password-manager-start/save_password.json", mode= "w") as data_file:    
+          #read old data from json file
+          json.dump(new_data, data_file, indent=4)
+      else:
+          #update data on json file
+          data.update(new_data)
+          with open("./password-manager-start/save_password.json", mode= "w") as data_file: 
+            #saving update data 
+            json.dump(data, data_file, indent=4)
+      finally:
           #clear the entry of website and password
           website_entry.delete(0, "end")
           password_entry.delete(0, "end")
+
+def find_password():
+  website_search = website_entry.get().lower()
+  
+  try:
+    with open("./password-manager-start/save_password.json", mode= "r") as data_file: 
+        data = json.load(data_file) 
+
+  except FileNotFoundError:
+        messagebox.showinfo(title="Error", message="No data file found")
+  else:
+      if website_search in data:
+        email = data[website_search]["email"]
+        password = data[website_search]["password"]
+
+        messagebox.showinfo(title={website_search}, message=f"Email: {email}\n Password: {password}")
+      else:
+         messagebox.showinfo(title="Error", message="No details for this website")
+      
+     
+         
+
+
+
+
+
+
+
+
+
+
+
 
 # ---------------------------- UI SETUP ------------------------------- #
 #create and setup all part of the window
@@ -84,10 +132,8 @@ mail_label.grid(column=0, row=2)
 password_label.grid(column=0, row=3)
 
 
-
-
 #create all entry
-website_entry = Entry(width=35, bg="white", highlightthickness=0, fg="black")
+website_entry = Entry(width=18, bg="white", highlightthickness=0, fg="black")
 website_entry.focus()
 
 mail_entry = Entry(width=35, bg="white", highlightthickness=0, fg="black")
@@ -97,7 +143,7 @@ password_entry = Entry(bg="white", highlightthickness=0, width=18, fg="black")
 
 
 #Place all entry with grid 
-website_entry.grid(row=1, column=1, columnspan=2, padx=0, pady=3)
+website_entry.grid(row=1, column=1, padx=0, pady=3)
 
 mail_entry.grid(row=2, column=1, columnspan=2, padx=0, 
 pady=3)
@@ -108,17 +154,18 @@ password_entry.grid(row=3, column=1, padx=0, pady=3)
 #create a generate password button
 random_password_button = Button(text="Generate Password",bg="white", highlightbackground="white", width=13, command=random_password)
 
+#create a seach button
+search_button = Button(text="Search", bg="white", highlightbackground="white", width=13, command=find_password)
+
 #create a add to local txt manager 
 add_to_file = Button(text="Add", width=36, bg="white", highlightbackground="white", command=save_password)
 
 #place all buttons with grid 
 random_password_button.grid(row=3, column=2, padx=0, pady=3)
 
+search_button.grid(row=1, column=2, padx=0, pady=3)
+
 add_to_file.grid(row=4, column=1, columnspan=2)
-
-
-
-
 
 
 #keep the window open
